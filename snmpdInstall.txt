@@ -1,0 +1,2 @@
+https://kifarunix.com/quick-way-to-install-and-configure-snmp-on-ubuntu-20-04
+sudo net-snmp-create-v3-user -ro -A STrP@ssword -a SHA -X STr0ngP@SSWORD -x AES snmpadmin
