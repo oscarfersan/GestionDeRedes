@@ -35,10 +35,16 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-
+    response = ''
     if message.content == '!sysName':
     	response = snmp.get('127.0.0.1', ['1.3.6.1.2.1.1.5.0'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol))
-    	await message.channel.send(response)
+    
+    if message.content == '!sensors':
+    	response = snmp.getBulk('127.0.0.1', ['1.3.6.1.4.1.2620.1.6.7.8'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol),5)
+    
+    if message.content == '!diskUsed':
+    	response = snmp.get('127.0.0.1', ['1.3.6.1.4.1.2021.9.1.9'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol))
+    await message.channel.send(response)
         
 
 

@@ -44,4 +44,15 @@ def get(target, oids, credentials, port=161, engine=hlapi.SnmpEngine(), context=
         *construct_object_types(oids)
     )
     return fetch(handler, 1)[0]
-    
+
+def getBulk(target, oids, credentials, count, start_from=0, port=161,
+             engine=hlapi.SnmpEngine(), context=hlapi.ContextData()):
+    handler = hlapi.bulkCmd(
+        engine,
+        credentials,
+        hlapi.UdpTransportTarget((target, port)),
+        context,
+        start_from, count,
+        *construct_object_types(oids)
+    )
+    return fetch(handler, count)
