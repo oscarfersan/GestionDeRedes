@@ -1,2 +1,23 @@
 https://kifarunix.com/quick-way-to-install-and-configure-snmp-on-ubuntu-20-04
 sudo net-snmp-create-v3-user -ro -A STrP@ssword -a SHA -X STr0ngP@SSWORD -x AES snmpadmin
+
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+    response = ''
+    if message.content == '!sysName':
+    	response = snmp.get('127.0.0.1', ['1.3.6.1.2.1.1.5.0'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol))
+    elif message.content == '!sysLocation':
+        response = snmp.get('127.0.0.1',['1.3.6.1.2.1.1.6'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol))
+    elif message.content == '!sysDescr':
+        response = snmp.get('127.0.0.1',['1.3.6.1.2.1.1.1'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol))
+    elif message.content == '!diskStatistics':
+    	response = snmp.getBulk('127.0.0.1', ['1.3.6.1.4.1.2021.9.1'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol),7)
+    elif message.content == '!memoryStatistics':
+        response = snmp.getBulk('127.0.0.1', ['1.3.6.1.4.1.2021.4'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol),8)
+    elif message.content == '!cpuTimes':
+        response = snmp.getBulk('127.0.0.1', ['1.3.6.1.4.1.2021.11'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol),7)
+    
+    await message.channel.send(response)
+
