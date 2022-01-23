@@ -8,11 +8,18 @@ from pysnmp import hlapi
 
 from discord.ext import commands
 
+from datetime import datetime
+
 import snmp
 
 import matplotlib.pyplot as plt
 import numpy as np
 from pymongo import MongoClient
+from pymongo import ASCENDING
+
+import threading
+
+import time
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -22,7 +29,7 @@ AES_PASSWORD = os.getenv('AES_PASSWORD')
 SNMP_USER = os.getenv('SNMP_USER')
 
 bot = commands.Bot(command_prefix="$")
-#client = discord.Client()
+
 
 @bot.command()
 async def snmpget(ctx, *args):
@@ -70,65 +77,58 @@ async def on_ready():
     
 @bot.command()
 async def GR(ctx,*args):
-    order = args [0]
-    client = MongoClient('localhost',27017)
-    db = client.grs
-    find = db.metric.find()
+	print(args)	
+	order = args [0]
+	client = MongoClient('localhost',27017)
+	db = client.grs
+	find = db.metric.find().sort('created_at', ASCENDING).limit(15)
 
-    if order == "Memory":
-        xList = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
-        yList = []#Obtener los 15 valores de memoria
-        print(find)
-        for i in xList:
-        	yList.append(find[i].mem)
-			
-        x = np.array(xList)
-        y = np.array(yList)
+	if order == "Memory":
+		xList = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
+		yList = []#Obtener los 15 valores de memoria
+		for i in find:
+			yList.append(i['mem'])
+		
+		x = np.array(xList)
+		y = np.array(yList)
+		plt.plot(x,y)
+		##plt.title(f'{order}'s Graph')
+		plt.savefig(fname='plot')
+		await ctx.send(file = discord.File('plot.png'))
+		os.remove('plot.png')
+		plt.clf()
 
-        plt.plot(x,y)
-        ##plt.title(f'{order}'s Graph')
-        plt.savefig(fname='plot')
-        await ctx.send(file = discord.File('plot.png'))
-        os.remove('plot.png')
-        plt.clf()
+	elif order == "CPU":
 
-    elif order == "CPU":
+		xList = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
+		yList = []#Obtener los 15 valores de memoria
+		for i in find:
+			yList.append(i['cpu'])
 
-        xList = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
-        yList = []#Obtener los 15 valores de memoria
-        for i in xList:
-            yList.append(find[i].cpu)
+		x = np.array(xList)
+		y = np.array(yList)
+		
+		plt.plot(x,y)
+		##plt.title(f'{order}'s Graph')
+		plt.savefig(fname='plot')
 
-        x = np.array(xList)
-        y = np.array(yList)
+		await ctx.send(file = discord.File('plot.png'))
+		os.remove('plot.png')
+		plt.clf() 
 
-        plt.plot(x,y)
-        ##plt.title(f'{order}'s Graph')
-        plt.savefig(fname='plot')
+##Crear hilo
+def BD ():
+	client = MongoClient('localhost',27017)
+	db = client.grs
+	while(True):
+		time.sleep(5)
+		memoria = snmp.get('127.0.0.1',['1.3.6.1.4.1.2021.4.11.0'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol))['1.3.6.1.4.1.2021.4.11.0']
+		cpu = snmp.get('127.0.0.1',['1.3.6.1.4.1.2021.10.1.3.3'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol))['1.3.6.1.4.1.2021.10.1.3.3']
+		date = datetime.now()
+		print(date)
+		db.metric.insert_one({'createdAt':date,'mem': memoria,'cpu':cpu})
 
-        await ctx.send(file = discord.File('plot.png'))
-        os.remove('plot.png')
-        plt.clf()
-
-"""@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-    response = ''
-    if message.content == '!sysName':
-    	response = snmp.get('127.0.0.1', ['1.3.6.1.2.1.1.5.0'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol))
-    elif message.content == '!sysLocation':
-        response = snmp.get('127.0.0.1',['1.3.6.1.2.1.1.6'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol))
-    elif message.content == '!sysDescr':
-        response = snmp.get('127.0.0.1',['1.3.6.1.2.1.1.1'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol))
-    elif message.content == '!diskStatistics':
-    	response = snmp.getBulk('127.0.0.1', ['1.3.6.1.4.1.2021.9.1'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol),7)
-    elif message.content == '!memoryStatistics':
-        response = snmp.getBulk('127.0.0.1', ['1.3.6.1.4.1.2021.4'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol),8)
-    elif message.content == '!cpuTimes':
-        response = snmp.getBulk('127.0.0.1', ['1.3.6.1.4.1.2021.11'], hlapi.UsmUserData(SNMP_USER, authKey=SHA_PASSWORD, privKey=AES_PASSWORD, authProtocol=hlapi.usmHMACSHAAuthProtocol, privProtocol=hlapi.usmAesCfb128Protocol),7)
-    
-    await message.channel.send(response)"""
-
+hilo = threading.Thread(target=BD)
+hilo.start()
 
 bot.run(TOKEN)
